@@ -2,8 +2,10 @@
 name = "expr-serial-port"
 version = "0.1.0"
 authors = ["Wink Saville <wink@saville.com>"]
+description = "Experiment with serialport-rs"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+serialport = "4.0.0"
