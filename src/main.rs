@@ -47,47 +47,51 @@ fn run(port_name: &str, baud_rate: &str) -> Result<(), Box<dyn Error>> {
         .open()
         .map_err(|ref e| format!("Port '{}' not available: {}", &port_name, e))?;
 
-    let chan_user_buf = input_service();
+    //let chan_user_buf = input_service();
 
     println!("Connected to {} at {} baud", &port_name, &baud_rate);
-    println!("Ctrl+D (Unix) or Ctrl+Z (Win) to stop. Press Return to clear the buffer.");
+    //println!("Ctrl+D (Unix) or Ctrl+Z (Win) to stop. Press Return to clear the buffer.");
+    println!("Ctrl+D (Unix) or Ctrl+Z (Win) to stop");
 
+    // TODO: We need to flush the read and write buffers
+    // as them may have junk? ATM each byte in the buffer
+    // is a 253 (0xFD) character.
     loop {
-        match chan_user_buf.try_recv() {
-            Ok(buf) => {
-                // let s = format!("{}\r", buf);
-                // println!("++++ s.len={} ++++", s.len());
-                // println!("{:?}", s);
-                // let b = s.as_bytes();
-                // println!("{:?}", b);
-                // //port.write_all(b).unwrap();
-                // let size_written = match port.write(b) {
-                //     Ok(s) => s,
-                //     Err(e) => panic!("Error port.write: {}", e)
-                // };
-                // println!("+++++++++++++++ size_written: {} ", size_written);
-                println!("++++ buf.len={} ++++", buf.len());
-                println!("buf: {:?}", buf);
-                let b = buf.as_bytes();
-                println!("b: {:?}", b);
-                port.write_all(b).unwrap();
+        // match chan_user_buf.try_recv() {
+        //     Ok(buf) => {
+        //         // let s = format!("{}\r", buf);
+        //         // println!("++++ s.len={} ++++", s.len());
+        //         // println!("{:?}", s);
+        //         // let b = s.as_bytes();
+        //         // println!("{:?}", b);
+        //         // //port.write_all(b).unwrap();
+        //         // let size_written = match port.write(b) {
+        //         //     Ok(s) => s,
+        //         //     Err(e) => panic!("Error port.write: {}", e)
+        //         // };
+        //         // println!("+++++++++++++++ size_written: {} ", size_written);
+        //         println!("++++ buf.len={} ++++", buf.len());
+        //         println!("buf: {:?}", buf);
+        //         let b = buf.as_bytes();
+        //         println!("b: {:?}", b);
+        //         port.write_all(b).unwrap();
 
-                // Write trailing CR
-                println!("write CR");
-                let mut v: Vec<u8> = Vec::new();
-                v.push(13);
-                let size_written = match port.write(&v) {
-                    Ok(s) => s,
-                    Err(e) => panic!("Error port.write: {}", e)
-                };
-                println!("+++++++++++++++ size_written: {} ", size_written);
-            }
-            Err(mpsc::TryRecvError::Empty) => (),
-            Err(mpsc::TryRecvError::Disconnected) => {
-                println!("Stopping.");
-                break;
-            }
-        }
+        //         // Write trailing CR
+        //         println!("write CR");
+        //         let mut v: Vec<u8> = Vec::new();
+        //         v.push(13);
+        //         let size_written = match port.write(&v) {
+        //             Ok(s) => s,
+        //             Err(e) => panic!("Error port.write: {}", e)
+        //         };
+        //         println!("+++++++++++++++ size_written: {} ", size_written);
+        //     }
+        //     Err(mpsc::TryRecvError::Empty) => (),
+        //     Err(mpsc::TryRecvError::Disconnected) => {
+        //         println!("Stopping.");
+        //         break;
+        //     }
+        // }
 
         // This panics with an "IO error" when I "Write trailing CR"
         let read_count = match port.bytes_to_read() {
@@ -97,6 +101,7 @@ fn run(port_name: &str, baud_rate: &str) -> Result<(), Box<dyn Error>> {
                 0
             }
         };
+        // println!("read_count={}", read_count);
 
         if read_count != 0 {
             println!("Bytes available to read: {}", read_count);
@@ -104,7 +109,9 @@ fn run(port_name: &str, baud_rate: &str) -> Result<(), Box<dyn Error>> {
             let mut serial_buf: Vec<u8> = vec![0; 1000];
             match port.read(serial_buf.as_mut_slice()) {
                 Ok(size) => {
-                    let s = match std::str::from_utf8(&serial_buf[..size]) {
+                    let s = &serial_buf[..size];
+                    println!("Bytes read: size={} serial_buf={:?}", size, s);
+                    let s = match std::str::from_utf8(s) {
                         Ok(v) => v,
                         Err(e) => panic!("Invalid utf8: {}", e),
                     };
@@ -118,7 +125,7 @@ fn run(port_name: &str, baud_rate: &str) -> Result<(), Box<dyn Error>> {
                 Err(e) => eprintln!("Error: {:?}", e),
             }
         }
-        thread::sleep(Duration::from_millis(100));
+        thread::sleep(Duration::from_millis(1000));
     }
 
     Ok(())
