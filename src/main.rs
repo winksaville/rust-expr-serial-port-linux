@@ -3,12 +3,14 @@
 
 //use std::{array::FixedSizeArray, error::Error};
 use std::error::Error;
-use std::io::{self, Read, Write};
+use std::io::{self, Read}; //, Write};
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
 use clap::{App, AppSettings, Arg};
+
+use serialport::ClearBuffer;
 
 fn main() {
     let matches = App::new("Serialport Example - Clear Input Buffer")
@@ -46,6 +48,14 @@ fn run(port_name: &str, baud_rate: &str) -> Result<(), Box<dyn Error>> {
         .timeout(Duration::from_millis(10))
         .open()
         .map_err(|ref e| format!("Port '{}' not available: {}", &port_name, e))?;
+
+    // Clear input buffer and output buffer
+    port.clear(ClearBuffer::Input)
+        .expect("Failed to discard input buffer");
+    println!("Input buffer cleared");
+    port.clear(ClearBuffer::Output)
+        .expect("Failed to discard output buffer");
+    println!("Output buffer cleared");
 
     //let chan_user_buf = input_service();
 
@@ -128,10 +138,11 @@ fn run(port_name: &str, baud_rate: &str) -> Result<(), Box<dyn Error>> {
         thread::sleep(Duration::from_millis(1000));
     }
 
-    Ok(())
+    // Ok(())
 }
 
-fn input_service() -> mpsc::Receiver<String> {
+// Not currently used :)
+fn _input_service() -> mpsc::Receiver<String> {
     let (tx, rx) = mpsc::channel::<String>();
 
     thread::spawn(move || {
@@ -163,4 +174,3 @@ fn input_service() -> mpsc::Receiver<String> {
     println!("input_service: return rx");
     rx
 }
-
